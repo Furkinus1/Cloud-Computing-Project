@@ -1,0 +1,41 @@
+//Before creating a config.yaml file for the deployment, we can generate a hex string to use as a security token. (A simple number could have been used as well)
+
+openssl rand -hex 32
+
+//The printed token should look like this: 
+
+746aef64b776741758e0782ddd301a2a292e0f3f3b0cfcad0c7b60181781d733
+
+//Now the config.yaml file can be created and the informations can be put inserted. (picture in documentation)
+
+//After this we must add the Jupyter Helm Chart Repository 
+
+helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+helm repo update
+
+//After doing this we can check if it worked and type
+
+helm repo list 
+
+//And as you can see the repo with the name juptyterhub was added.
+
+RELEASE=jupyter
+NAMESPACE=jupyter
+
+helm upgrade --cleanup-on-fail \
+--install $RELEASE jupyterhub/jupyterhub \
+--namespace $NAMESPACE \
+--create-namespace \
+--version=0.11.1 \
+--values config.yaml
+
+//--namespace = refers to the Kubernetes Namespace, an identifier used to group Kuber-netes resources, in this case all Kubernetes resources associated with the JupyterHub chart (Jupyter). The namespace identifier for performing any commands with kubectl must be included. 
+
+kubectl get pod --namespace jupyter
+
+//After the full installation we can inspect the installation and get the IP Adress of Jupyter-hub provided by the LoadBalancer. 
+
+kubectl get svc -n jupyter
+
+//Done.
+
