@@ -1,0 +1,30 @@
+//First MetalLB was installed by using Manifest 
+
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.10.2/manifests/namespace.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.10.2/manifests/metallb.yaml
+
+//Before creating a .yaml file to define the pool of IP addresses you must find out which IP addresses are free to use
+
+sudo apt install sipcalc
+
+//use sipcalc and define usable IP Range
+
+ apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - 192.55.0.1-192.55.0.20
+
+
+//After this step the .yaml file needs to be applied with the command
+
+kubectl apply -f /tmp/metallb.yaml
+
+//Done. 
