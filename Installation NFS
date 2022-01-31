@@ -1,0 +1,36 @@
+//First the Install NFS Server Setup needs to be installed on the PC that should be used as storage pc.
+Important note: This only needs to be don’t on the worker node. 
+
+sudo apt install nfs-kernel-server
+
+//For all the other machines in the network we can install int NFS Client Setup 
+
+sudo apt install nfs-common
+
+//On the next step a folder needs to be set up on the NFS Server. 
+
+sudo mkdir /srv/nfs/kubedata -p
+sudo chown nobody: /srv/nfs/kubedata
+
+//Then, this folder must be exposed by adding: 
+
+/srv/nfs/kubedata *(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)
+
+//To the /etc/exports file. After restarting the NFS Server the folder should be available
+
+sudo systemctl enable --now nfs-server
+sudo exportfs -rav
+
+//Now on the Master Node we must use Helm to install an NFS-Provisioner-Tool for Ku-bernetes. First, the Repository is added to the Helm installation and then the NFS is in-stalled with some extra parameters. IP and the Path of the NFS Server need to be defined. 
+
+helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+--set nfs.server=10.42.0.2 \
+--set nfs.path=/srv/nfs/kubedata \
+--set parameters.archiveOnDelete=false
+
+//To show the name of the Storage Class we can type in 
+
+kubectl get sc
+kubectl patch storageclass nfs-client -p '{"metadata": {"annota-tions":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+//Done. 
