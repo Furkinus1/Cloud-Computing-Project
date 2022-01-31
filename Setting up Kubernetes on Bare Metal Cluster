@@ -1,0 +1,119 @@
+//to increase the system performance the swap area was disabled since the server has suffi-cient RAM memory
+
+sudo -i
+swapoff -a; sed -i '/swap/d' /etc/fstab
+exit
+
+//installing containerd Engine
+
+
+sudo apt-get update \
+    && sudo apt-get install -y apt-transport-https \
+        ca-certificates curl software-properties-common
+        
+//Loading modules overlay
+
+cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay \
+    && sudo modprobe br_netfilter
+
+//Setting sysctl parameters and reloading config files
+
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+sudo sysctl –system
+
+//Downloading and Then setting up the docker repository 
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key --keyring /etc/apt/trusted.gpg.d/docker.gpg add -
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) \
+stable"
+
+//Installing the Containerd and creating a config.toml
+
+sudo apt-get update \
+&& sudo apt-get install -y containerd.io
+
+sudo mkdir -p /etc/containerd \
+&& sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+//Then containerd needs to be configured to use systemd cgroup drive with runc by editing the config file. To open the file in the terminal the nano command is used. 
+
+sudo nano /etc/containerd/config.toml
+
+//SystemdCgroup needs to be added and set to true (in the yaml file)
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+SystemdCgroup = true
+
+//restart containerd
+
+sudo systemctl restart containerd
+
+//Installing the required dependencies 
+
+sudo apt-get update \
+&& sudo apt-get install -y apt-transport-https curl
+
+//After that the repository keys and the repository, itself need to be added to the package
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+
+//These packages need to be updated and kubelet needs to be installed
+
+sudo apt-get update \
+&& sudo apt-get install -y -q kubelet kubectl kubeadm
+
+//After installing kubelet the cgroup driver needs to be configured and kubelet restarted
+
+sudo mkdir -p  /etc/systemd/system/kubelet.service.d/
+
+sudo cat << EOF | sudo tee  /etc/systemd/system/kubelet.service.d/0-containerd.conf
+[Service]
+Environment="KUBELET_EXTRA_ARGS=--container-runtime=remote --runtime-request-timeout=15m --container-runtime-endpoint=unix:///run/containerd/containerd.sock --cgroup-driver='systemd'"
+EOF
+sudo systemctl daemon-reload \
+&& sudo systemctl restart kubelet
+
+// In the first section an IP was chosen, and the `/16' means that the first 16 binary digits are the network address. The second API-Server address is the IPv4 address of the fur-kanmaster node.
+
+sudo kubeadm init --pod-network-cidr=192.55.0.0/16 --apiserver-advertise-address=10.42.0.179
+
+//the config setup was then finished by typing…
+
+mkdir -p $HOME/.kube \
+&& sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config \
+&& sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+//deploying the Calico Network. A Calico network is necessary for the defining and enforc-ing of network policies. It can prescribe which pods can send and receive traffic.
+
+sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf create -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
+
+//Lastly a token needs to be generated and printed 
+
+kubeadm token create --print-join-command
+
+//The printed token in the terminal looked similar to this:
+
+ kubeadm join 10.0.2.7:6443 --token e2ctwm.barg1e4w35lg4kej --discovery-token-ca-cert-hash sha256:ea81b70854c915a8d965b038f897261affc4889398b46e1cea3b3f1fddd95036
+ 
+//Done. 
+
+
+
+
+
+
