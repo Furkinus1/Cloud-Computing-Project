@@ -1,0 +1,11 @@
+//To install helm the following commands were entered in the command line of the fur-kanmaster machine.
+
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+//We can check if it was installed correctly by typing...
+
+helm version
+
+//Done.
