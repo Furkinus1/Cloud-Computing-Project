@@ -1,0 +1,15 @@
+//Since the Kubernetes Cluster is running in a subnet within the university network, we must set up a reverse proxy to access the JupyterHub Instance that is running on it. Im-portant note: The Accesspoint-PC has two network cards. One is connected to the univer-sity network, and one is connected to the subnet on which the Kubernetes Clusters are running. The following command was used to set up a reverse Proxy connection using the port 9000 (arbitrarily selectable). In the proxy pass section, the External IP that was assigned by the Loadbalancer is inserted (10.42.0.104). The following figure after the command is showing the reverse proxy setup.  
+
+server {
+    listen 9000;
+    location / {
+        proxy_set_header   X-Forwarded-For $remote_addr;
+        proxy_set_header Host $host;
+        proxy_pass http://10.42.0.104;
+    }
+}
+
+
+//Now on the Browser at home we can paste the IP-Address of the Accesspoint-PC and the Port 9000 we have determined to access a Jupyter Notebook instance. 
+
+//Done. 
