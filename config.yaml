@@ -1,0 +1,12 @@
+proxy:
+    secretToken: "a0ffa290012ff7d9fa98f07d58c7356fb1d8dd4054e9ea1ccc059779a92fbc13"
+hub:
+    db:
+        type: postgres
+        url: postgresql+psycopg2://furkan:furkan@127.0.0.1:5432/furkandb
+
+singleuser:
+    storage:
+        type: dynamic
+        capacity: 5Gi
+
